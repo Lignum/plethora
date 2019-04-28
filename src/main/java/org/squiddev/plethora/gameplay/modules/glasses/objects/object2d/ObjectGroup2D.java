@@ -3,6 +3,7 @@ package org.squiddev.plethora.gameplay.modules.glasses.objects.object2d;
 import com.google.common.base.Objects;
 import io.netty.buffer.ByteBuf;
 import it.unimi.dsi.fastutil.ints.IntSet;
+import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
