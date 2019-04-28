@@ -12,12 +12,15 @@ import org.squiddev.plethora.gameplay.modules.glasses.CanvasClient;
 import org.squiddev.plethora.gameplay.modules.glasses.objects.ColourableObject;
 import org.squiddev.plethora.gameplay.modules.glasses.objects.ObjectRegistry;
 import org.squiddev.plethora.gameplay.modules.glasses.objects.Scalable;
+import org.squiddev.plethora.gameplay.modules.glasses.renderer.PrimitiveRenderer;
+import org.squiddev.plethora.gameplay.modules.glasses.renderer.Renderers;
+import org.squiddev.plethora.gameplay.modules.glasses.renderer.Vertex;
 import org.squiddev.plethora.utils.ByteBufUtils;
 import org.squiddev.plethora.utils.Vec2d;
 
 import javax.annotation.Nonnull;
 
-import static org.lwjgl.opengl.GL11.GL_LINES;
+import static org.lwjgl.opengl.GL11.*;
 
 public class Line extends ColourableObject implements Scalable, MultiPoint2D {
 	private Vec2d start = Vec2d.ZERO;
@@ -86,20 +89,39 @@ public class Line extends ColourableObject implements Scalable, MultiPoint2D {
 	@Override
 	@SideOnly(Side.CLIENT)
 	public void draw(CanvasClient canvas) {
-		setupFlat();
-		GlStateManager.glLineWidth(thickness);
+		Renderers renderers = canvas.getRenderers();
+		PrimitiveRenderer renderer = renderers.getRendererFor(Renderers.Primitive.LINES);
 
-		int red = getRed(), green = getGreen(), blue = getBlue(), alpha = getAlpha();
+		float red = getRed() / 255.0f, green = getGreen() / 255.0f, blue = getBlue() / 255.0f, alpha = getAlpha() / 255.0f;
 
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder buffer = tessellator.getBuffer();
-		buffer.begin(GL_LINES, DefaultVertexFormats.POSITION_COLOR);
+		float startX = (float)start.x;
+		float startY = (float)start.y;
+		float endX = (float)end.x;
+		float endY = (float)end.y;
 
-		buffer.pos((float) start.x, (float) start.y, 0).color(red, green, blue, alpha).endVertex();
-		buffer.pos((float) end.x, (float) end.y, 0).color(red, green, blue, alpha).endVertex();
+		renderer.addVertex(new Vertex(startX, startY, 0, red, green, blue, alpha));
+		renderer.addVertex(new Vertex(endX, endY, 0, red, green, blue, alpha));
 
-		tessellator.draw();
+		/*float slope = (startY - endY) / (endX - startX);
+		float tangent = 1.0f - slope;
 
-		GlStateManager.glLineWidth(1);
+		float topLeftX = startX + tangent * thickness;
+		float topLeftY = startY + tangent * thickness;
+		float bottomLeftX = startX + tangent * -thickness;
+		float bottomLeftY = startY + tangent * -thickness;
+		float topRightX = endX + tangent * -thickness;
+		float topRightY = endY + tangent * -thickness;
+		float bottomRightX = endX + tangent * thickness;
+		float bottomRightY = endY + tangent * thickness;
+
+		// Top left
+		renderer.addVertex(new Vertex(topLeftX, topLeftY, 0, red, green, blue, alpha));
+		renderer.addVertex(new Vertex(bottomRightX, bottomRightY, 0, red, green, blue, alpha));
+		renderer.addVertex(new Vertex(topRightX, topRightY, 0, red, green, blue, alpha));
+
+		// Bottom right
+		renderer.addVertex(new Vertex(topLeftX, topLeftY, 0, red, green, blue, alpha));
+		renderer.addVertex(new Vertex(bottomLeftX, bottomLeftY, 0, red, green, blue, alpha));
+		renderer.addVertex(new Vertex(bottomRightX, bottomRightY, 0, red, green, blue, alpha));*/
 	}
 }

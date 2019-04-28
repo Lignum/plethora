@@ -1,46 +1,87 @@
 package org.squiddev.plethora.gameplay.modules.glasses.renderer;
 
-import io.netty.buffer.ByteBuf;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.BufferUtils;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
-import java.util.List;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 
-public class PrimitiveRenderer implements Closeable {
+public final class PrimitiveRenderer implements Closeable {
 	private final int primitive;
-	private final int buffer;
-	private int vertexCount;
+	private int buffer = -1;
+	private LinkedList<Vertex> vertices = new LinkedList<>();
+
+	private boolean dirty = true;
 
 	public PrimitiveRenderer(int primitive) {
 		this.primitive = primitive;
-		buffer = glGenBuffers();
 	}
 
-	public void prepareRender(ByteBuffer buffer, int vertexCount) {
-		this.vertexCount = vertexCount;
-		glBindBuffer(GL_ARRAY_BUFFER, this.buffer);
-		glBufferData(GL_ARRAY_BUFFER, buffer, GL_DYNAMIC_DRAW);
+	public void reset() {
+		vertices = new LinkedList<>();
+		dirty = true;
+	}
+
+	public void addVertex(Vertex vertex) {
+		vertices.addLast(vertex);
+		dirty = true;
+	}
+
+	private static void setupFlat() {
+		GlStateManager.color(1, 1, 1);
+		GlStateManager.disableCull();
+		GlStateManager.enableBlend();
+		GlStateManager.disableAlpha();
+		GlStateManager.disableTexture2D();
+		GlStateManager.disableLighting();
 	}
 
 	public void render() {
-		GlStateManager.glEnableClientState(GL_VERTEX_ARRAY);
-		GlStateManager.glEnableClientState(GL_COLOR_ARRAY);
+		if (vertices.isEmpty()) {
+			return;
+		}
 
-		glBindBuffer(GL_ARRAY_BUFFER, buffer);
-		GlStateManager.glVertexPointer(3, GL_FLOAT, Vertex.VERTEX_SIZE, Vertex.POSITION_OFFSET);
-		GlStateManager.glColorPointer(3, GL_FLOAT, Vertex.VERTEX_SIZE, Vertex.COLOUR_OFFSET);
+		if (dirty) {
+			if (this.buffer == -1) {
+				this.buffer = glGenBuffers();
+			}
 
-		GlStateManager.glDrawArrays(primitive, 0, vertexCount);
+			ByteBuffer buffer = BufferUtils.createByteBuffer(vertices.size() * Vertex.VERTEX_SIZE);
 
-		GlStateManager.glDisableClientState(GL_COLOR_ARRAY);
-		GlStateManager.glDisableClientState(GL_VERTEX_ARRAY);
+			for (Vertex v : vertices) {
+				v.writeToByteBuffer(buffer);
+			}
+
+			buffer.flip();
+			glBindBuffer(GL_ARRAY_BUFFER, this.buffer);
+			glBufferData(GL_ARRAY_BUFFER, buffer, GL_DYNAMIC_DRAW);
+
+			dirty = false;
+		}
+
+		setupFlat();
+
+		if (buffer != -1) {
+			glBindBuffer(GL_ARRAY_BUFFER, buffer);
+			GlStateManager.glEnableClientState(GL_VERTEX_ARRAY);
+			GlStateManager.glEnableClientState(GL_COLOR_ARRAY);
+
+			GlStateManager.glVertexPointer(3, GL_FLOAT, Vertex.VERTEX_SIZE, Vertex.POSITION_OFFSET);
+			GlStateManager.glColorPointer(4, GL_FLOAT, Vertex.VERTEX_SIZE, Vertex.COLOUR_OFFSET);
+
+			GlStateManager.glDrawArrays(primitive, 0, vertices.size());
+
+			GlStateManager.glDisableClientState(GL_COLOR_ARRAY);
+			GlStateManager.glDisableClientState(GL_VERTEX_ARRAY);
+		}
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 
 	@Override

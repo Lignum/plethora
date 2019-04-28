@@ -5,6 +5,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.squiddev.plethora.gameplay.Plethora;
 import org.squiddev.plethora.gameplay.modules.glasses.objects.ObjectGroup;
+import org.squiddev.plethora.gameplay.modules.glasses.renderer.Renderers;
 
 import static org.squiddev.plethora.gameplay.modules.glasses.CanvasHandler.ID_2D;
 import static org.squiddev.plethora.gameplay.modules.glasses.CanvasHandler.ID_3D;
@@ -14,6 +15,8 @@ public class CanvasClient {
 
 	private final Int2ObjectMap<BaseObject> objects = new Int2ObjectOpenHashMap<>();
 	private final Int2ObjectMap<IntSortedSet> childrenOf = new Int2ObjectOpenHashMap<>();
+
+	private final Renderers renderers = new Renderers();
 
 	public CanvasClient(int id) {
 		this.id = id;
@@ -33,6 +36,8 @@ public class CanvasClient {
 			parent.add(object.id());
 			if (object instanceof ObjectGroup) childrenOf.put(object.id(), new IntAVLTreeSet());
 		}
+
+		renderers.reset();
 	}
 
 	public void remove(int id) {
@@ -44,6 +49,8 @@ public class CanvasClient {
 			IntSet parent = childrenOf.get(object.parent());
 			if (parent != null) parent.remove(id);
 		}
+
+		renderers.reset();
 	}
 
 	public BaseObject getObject(int id) {
@@ -54,12 +61,20 @@ public class CanvasClient {
 		return childrenOf.get(id);
 	}
 
+	public Renderers getRenderers() {
+		return renderers;
+	}
+
 	@SideOnly(Side.CLIENT)
 	public void drawChildren(IntIterator children) {
 		while (children.hasNext()) {
 			int id = children.nextInt();
 			BaseObject object = getObject(id);
-			if (object != null) object.draw(this);
+			if (object != null && object.isDirty()) {
+				object.draw(this);
+			}
 		}
+
+		renderers.render();
 	}
 }

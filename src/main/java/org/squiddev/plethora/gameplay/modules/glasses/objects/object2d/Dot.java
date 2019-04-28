@@ -5,12 +5,16 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.squiddev.plethora.gameplay.modules.glasses.CanvasClient;
 import org.squiddev.plethora.gameplay.modules.glasses.objects.ColourableObject;
 import org.squiddev.plethora.gameplay.modules.glasses.objects.ObjectRegistry;
 import org.squiddev.plethora.gameplay.modules.glasses.objects.Scalable;
+import org.squiddev.plethora.gameplay.modules.glasses.renderer.PrimitiveRenderer;
+import org.squiddev.plethora.gameplay.modules.glasses.renderer.Renderers;
+import org.squiddev.plethora.gameplay.modules.glasses.renderer.Vertex;
 import org.squiddev.plethora.utils.ByteBufUtils;
 import org.squiddev.plethora.utils.Vec2d;
 
@@ -70,23 +74,18 @@ public class Dot extends ColourableObject implements Positionable2D, Scalable {
 	@Override
 	@SideOnly(Side.CLIENT)
 	public void draw(CanvasClient canvas) {
-		setupFlat();
+		Renderers renderers = canvas.getRenderers();
+		PrimitiveRenderer renderer = renderers.getRendererFor(Renderers.Primitive.TRIANGLES);
 
 		float x = (float) position.x, y = (float) position.y, delta = scale / 2;
-		int red = getRed(), green = getGreen(), blue = getBlue(), alpha = getAlpha();
+		float red = getRed() / 255.0f, green = getGreen() / 255.0f, blue = getBlue() / 255.0f, alpha = getAlpha() / 255.0f;
 
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder buffer = tessellator.getBuffer();
-		buffer.begin(GL_TRIANGLES, DefaultVertexFormats.POSITION_COLOR);
+		renderer.addVertex(new Vertex(x - delta, y - delta, 0, red, green, blue, alpha));
+		renderer.addVertex(new Vertex(x - delta, y + delta, 0, red, green, blue, alpha));
+		renderer.addVertex(new Vertex(x + delta, y + delta, 0, red, green, blue, alpha));
 
-		buffer.pos(x - delta, y - delta, 0).color(red, green, blue, alpha).endVertex();
-		buffer.pos(x - delta, y + delta, 0).color(red, green, blue, alpha).endVertex();
-		buffer.pos(x + delta, y + delta, 0).color(red, green, blue, alpha).endVertex();
-
-		buffer.pos(x - delta, y - delta, 0).color(red, green, blue, alpha).endVertex();
-		buffer.pos(x + delta, y + delta, 0).color(red, green, blue, alpha).endVertex();
-		buffer.pos(x + delta, y - delta, 0).color(red, green, blue, alpha).endVertex();
-
-		tessellator.draw();
+		renderer.addVertex(new Vertex(x - delta, y - delta, 0, red, green, blue, alpha));
+		renderer.addVertex(new Vertex(x + delta, y + delta, 0, red, green, blue, alpha));
+		renderer.addVertex(new Vertex(x + delta, y - delta, 0, red, green, blue, alpha));
 	}
 }

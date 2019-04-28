@@ -58,6 +58,10 @@ public abstract class BaseObject {
 		return value;
 	}
 
+	boolean isDirty() {
+		return dirty;
+	}
+
 	protected void setDirty() {
 		dirty = true;
 	}
